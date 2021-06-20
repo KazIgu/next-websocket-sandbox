@@ -98,7 +98,7 @@ export const Home: NextPage<Props> = () => {
           {turn === myturn && 'あなたのターン'}
           {turn}
           {'　'}
-          <span onClick={toggleMyturn}>自分の色変更</span>
+          <button type="button" onClick={toggleMyturn}>自分の色変更</button>
         </div>
         <Board pieces={pieces} putableMap={putableMap} handleClick={handleClick} />
       </main>
