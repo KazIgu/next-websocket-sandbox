@@ -15,7 +15,7 @@ export const OthelloPieceContainer = styled.div`
   padding: 4px;
 `;
 
-export const ChangePieceTypeButton = styled.button`
+export const Button = styled.button`
   appearance: none;
   border: 1px solid rgba(0,0,0,0.1);
   background: transparent;
