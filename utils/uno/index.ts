@@ -68,14 +68,19 @@ export const detectMyTurn = (
 ): boolean => players[turn] === id;
 
 export const detectDiscardable = (layout: Card[], card: Card): boolean => {
-  const layoutTopCard = [...layout].reverse().find(
-    (c) => c.type === cardTypes.NUMBER
-      || c.type === cardTypes.WILD
-      || c.type === cardTypes.WILD_DRAW_FOUR,
-  );
+  const layoutTopCard = layout[layout.length - 1];
+  if (!layoutTopCard) return true;
   if (layoutTopCard?.color === card.color) return true;
-  if (layoutTopCard?.number === card.number) return true;
+  if (layoutTopCard?.type === cardTypes.NUMBER
+    && layoutTopCard?.number === card.number) return true;
+  if (layoutTopCard?.type !== cardTypes.NUMBER && layoutTopCard?.type === card.type) return true;
   if (card.type === cardTypes.WILD_DRAW_FOUR) return true;
   if (card.type === cardTypes.WILD) return true;
   return false;
+};
+
+export const getNumberOfDraw = (card: Card): number => {
+  if (card.type === cardTypes.DRAW_TWO) return 2;
+  if (card.type === cardTypes.WILD_DRAW_FOUR) return 4;
+  return 0;
 };

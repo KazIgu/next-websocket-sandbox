@@ -4,10 +4,12 @@ import Head from 'next/head';
 import { io, Socket } from 'socket.io-client';
 import { useCallback, useEffect, useState } from 'react';
 import {
-  createAllCards, detectMyTurn, detectDiscardable, pick,
+  createAllCards, detectMyTurn, detectDiscardable, pick, getNumberOfDraw,
 } from '@/utils/uno';
-import { initialPickCount, statusTypes } from '@/constants/uno';
-import { Card, StatusType } from '@/types/uno';
+import {
+  cardColors, cardTypes, initialPickCount, statusTypes,
+} from '@/constants/uno';
+import { Card, CardColor, StatusType } from '@/types/uno';
 import { UnoCardList } from '@/components/molecules/UnoCardList';
 import { UnoLayoutCards } from '@/components/molecules/UnoLayoutCards';
 import { UnoCard } from '@/components/atoms/UnoCard';
@@ -32,6 +34,8 @@ export const Uno: NextPage = () => {
   const [hand, setHand] = useState<Card[]>([]);
   // 場札
   const [layout, setLayout] = useState<Card[]>([]);
+  // Draw
+  const [numberOfDraw, setNumberOfDraw] = useState<number>(0);
 
   useEffect((): any => {
     if (!socket) {
@@ -111,11 +115,12 @@ export const Uno: NextPage = () => {
 
   const onDiscard = (data: {
     layout: Card[]
+    numberOfDraw: number
   }) => {
     // eslint-disable-next-line no-console
     console.log('discard -----');
-    setLayout([...layout, ...data.layout]);
-    // setTurn(data.turn);
+    setLayout(data.layout);
+    setNumberOfDraw(data.numberOfDraw);
   };
 
   useEffect(() => {
@@ -163,10 +168,6 @@ export const Uno: NextPage = () => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [socket, me]);
 
-  useEffect(() => {
-    setIsMyTurn(detectMyTurn(players, turn, me));
-  }, [players, turn, me]);
-
   const start = () => {
     setIsMyTurn(detectMyTurn(players, turn, me));
     axios.post('/api/uno/prepare', {
@@ -178,31 +179,53 @@ export const Uno: NextPage = () => {
 
   const turnEnd = () => {
     if (!isMyTurn) return;
+    if (numberOfDraw > 0) return;
     axios.post('/api/uno/nextTurn', {
       turn: turn === players.length - 1 ? 0 : turn + 1,
     });
   };
 
+  const discard = (index: number) => {
+    if (!isMyTurn) return;
+    if (numberOfDraw > 0) {
+      // eslint-disable-next-line no-alert
+      alert(`山札から${numberOfDraw}枚引いてください`);
+      return;
+    }
+    const discardCard = hand[index];
+    if (!detectDiscardable(layout, discardCard)) return;
+    if (discardCard.type === cardTypes.WILD || discardCard.type === cardTypes.WILD_DRAW_FOUR) {
+      // eslint-disable-next-line no-alert
+      const color = prompt(`カラーを[${cardColors.BLUE}, ${cardColors.GREEN}, ${cardColors.RED}, ${cardColors.YELLOW}]から選択してください`);
+      discardCard.color = `${color}` as CardColor;
+    }
+    const remainingCard = hand.filter((card, i) => i !== index);
+    setHand(remainingCard);
+    axios.post('/api/uno/discard', {
+      layout: [...layout, discardCard],
+      numberOfDraw: getNumberOfDraw(discardCard),
+    });
+    turnEnd();
+  };
+
   const draw = () => {
     if (!isMyTurn) return;
+    if (numberOfDraw > 0) {
+      setNumberOfDraw(numberOfDraw - 1);
+    }
     const [handCards, deckCards] = pick(deck, 1);
     setHand([...handCards, ...hand]);
+    setDeck(deckCards);
     axios.post('/api/uno/draw', {
       deck: deckCards,
     });
   };
 
-  const discard = (index: number) => {
-    if (!isMyTurn) return;
-    const discardCard = hand[index];
-    if (!detectDiscardable(layout, discardCard)) return;
-    const remainingCard = hand.filter((card, i) => i !== index);
-    setHand(remainingCard);
-    axios.post('/api/uno/discard', {
-      layout: [...layout, discardCard],
-    });
-    turnEnd();
-  };
+  useEffect(() => {
+    const myTurn = detectMyTurn(players, turn, me);
+    setIsMyTurn(myTurn);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [players, turn, me]);
 
   return (
     <>
@@ -237,6 +260,7 @@ export const Uno: NextPage = () => {
         )}
         {process.env.NODE_ENV === 'development' && (
           <Debug
+            numberOfDraw={numberOfDraw}
             status={status}
             players={players}
             playersLength={players.length}
