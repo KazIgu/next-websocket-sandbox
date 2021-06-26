@@ -1,7 +1,7 @@
 import shuffle from 'just-shuffle';
 import { cardTypes, cardColors, cardNumbers } from '@/constants/uno';
 import {
-  Card, CardColor, CardNumber, CardType,
+  Card, CardColor, CardNumber, CardType, Player,
 } from '@/types/uno';
 
 const createNumberCards = (): Card[] => {
@@ -64,8 +64,8 @@ export const pick = (cards: Card[], quantity = 1): [Card[], Card[]] => {
 };
 
 export const detectMyTurn = (
-  players: string[], turn: number, id: string,
-): boolean => players[turn] === id;
+  players: Player[], turn: number, id: string,
+): boolean => players[turn].id === id;
 
 export const detectDiscardable = (layout: Card[], card: Card): boolean => {
   const layoutTopCard = layout[layout.length - 1];
@@ -92,7 +92,7 @@ export const getNextTurn = ({
   skip = false,
 }: {
   turn: number,
-  players: string[],
+  players: Player[],
   reverse?: boolean,
   skip?: boolean
 }): number => {

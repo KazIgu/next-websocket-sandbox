@@ -5,13 +5,13 @@ const handler = async (req: NextApiRequest, res: NextApiResponseServerIO) => {
   const io = res?.socket?.server?.io;
 
   if (req.method === 'POST') {
-    const { body } = req;
-    io?.of('/uno')?.in(body.room).emit('player-join', {
-      players: body.players,
-    });
+    const { room, id } = req.body;
 
-    // return othello
-    res.status(201).json(body);
+    if (io) {
+      await io?.of('/uno').sockets.get(id)?.join(room);
+      await io?.of('/uno').in(room).emit('room', true);
+    }
+    await res.status(200).json({ room });
   }
 };
 

@@ -6,7 +6,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponseServerIO) => {
 
   if (req.method === 'POST') {
     const { body } = req;
-    await io?.of('/uno').emit('draw', body);
+    await io?.of('/uno').in(body.room).emit('draw', body);
 
     await res.status(200).json(body);
   }

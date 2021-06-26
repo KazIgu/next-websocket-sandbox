@@ -12,3 +12,8 @@ export type Card = {
   color?: CardColor
   number?: number
 }
+
+export type Player = {
+  id: string
+  name?: string
+}

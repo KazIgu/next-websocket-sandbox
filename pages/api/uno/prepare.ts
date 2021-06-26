@@ -6,7 +6,7 @@ const handler = (req: NextApiRequest, res: NextApiResponseServerIO) => {
 
   if (req.method === 'POST') {
     const { body } = req;
-    io?.of('/uno')?.emit('prepare', body);
+    io?.of('/uno')?.in(body.room).emit('prepare', body);
 
     // return othello
     res.status(201).json(body);
