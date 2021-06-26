@@ -22,6 +22,7 @@ export const Home: NextPage = () => (
 
     <Main>
       <Link href="/othello">オセロ</Link>
+      <Link href="/uno">UNO</Link>
     </Main>
   </>
 );
