@@ -343,7 +343,13 @@ export const Uno: NextPage = () => {
         )}
 
         {status === statusTypes.PREPARATION && (
-          <button type="button" onClick={start}>スタート</button>
+          <>
+            <div>
+              {players.length}
+              人参加
+            </div>
+            <button type="button" onClick={start}>スタート</button>
+          </>
         )}
 
         {process.env.NODE_ENV === 'development' && (
