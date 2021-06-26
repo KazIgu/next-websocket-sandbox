@@ -2,11 +2,14 @@ import axios from 'axios';
 import { NextPage } from 'next';
 import Head from 'next/head';
 import { io, Socket } from 'socket.io-client';
-import { useEffect, useState } from 'react';
-import { createAllCards, detectMyTurn, pick } from '@/utils/uno';
+import { useCallback, useEffect, useState } from 'react';
+import {
+  createAllCards, detectMyTurn, detectDiscardable, pick,
+} from '@/utils/uno';
 import { initialPickCount, statusTypes } from '@/constants/uno';
 import { Card, StatusType } from '@/types/uno';
 import { UnoCardList } from '@/components/molecules/UnoCardList';
+import { UnoLayoutCards } from '@/components/molecules/UnoLayoutCards';
 import { UnoCard } from '@/components/atoms/UnoCard';
 import { DefaultEventsMap } from 'socket.io-client/build/typed-events'; // TODO:
 import { Debug } from '@/components/_debugs/Uno';
@@ -29,8 +32,6 @@ export const Uno: NextPage = () => {
   const [hand, setHand] = useState<Card[]>([]);
   // 場札
   const [layout, setLayout] = useState<Card[]>([]);
-  // 選択した手札のカードのindex(重複カードがあるからindex)
-  const [selectedCardIndexes, setSelectedCardIndexes] = useState<number[]>([]);
 
   useEffect((): any => {
     if (!socket) {
@@ -42,62 +43,103 @@ export const Uno: NextPage = () => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  useEffect(() => {
+  const onConnect = useCallback(async () => {
     if (!socket) return;
-    socket.on('connect', async () => {
-      // eslint-disable-next-line no-console
-      console.log('SOCKET CONNECTED!', socket.id);
-      const playersResponse = await axios.get('/api/uno/players');
-      setMe(socket.id);
-      if (status !== statusTypes.PLAYING) {
-        setPlayers(playersResponse.data.players);
-      }
-    });
+    // eslint-disable-next-line no-console
+    console.log('SOCKET CONNECTED!', socket.id);
+    const playersResponse = await axios.get('/api/uno/players');
+    setMe(socket.id);
+    if (status !== statusTypes.PLAYING) {
+      setPlayers(playersResponse.data.players);
+    }
+  }, [socket, status]);
 
-    // join member
-    socket.on('join', (data) => {
-      // eslint-disable-next-line no-console
-      console.log('join -----');
-      if (status !== statusTypes.PLAYING) {
-        setPlayers(data.players);
-      }
-    });
-
-    socket.on('prepare', (data) => {
-      // eslint-disable-next-line no-console
-      console.log('prepare -----');
-      setStatus(statusTypes.PREPARE);
-      setDeck(data.deck);
+  const onJoin = (data: {
+    players: string[]
+  }) => {
+    // eslint-disable-next-line no-console
+    console.log('join -----');
+    if (status !== statusTypes.PLAYING) {
       setPlayers(data.players);
-      if (detectMyTurn(data.players, data.turn, me)) {
-        const [handCards, deckCards] = pick(data.deck, initialPickCount);
-        setHand(handCards);
-        setDeck(deckCards);
+    }
+  };
+
+  const onPrepare = (data: {
+    deck: Card[],
+    turn: number,
+    players: string[]
+  }) => {
+    // eslint-disable-next-line no-console
+    console.log('prepare -----');
+    setStatus(statusTypes.PREPARE);
+    setDeck(data.deck);
+    setPlayers(data.players);
+    if (detectMyTurn(data.players, data.turn, me)) {
+      const [handCards, deckCards] = pick(data.deck, initialPickCount);
+      setHand(handCards);
+      setDeck(deckCards);
+      if (data.turn === data.players.length - 1) {
+        // start
+        const [layoutCards, _deckCards] = pick(deckCards, 1);
+        axios.post('/api/uno/start', {
+          layout: layoutCards,
+          deck: _deckCards,
+          players: data.players,
+          turn: 0,
+        });
+      } else {
         axios.post('/api/uno/prepare', {
           deck: deckCards,
           players: data.players,
           turn: data.turn + 1,
         });
-        if (data.turn === data.players.length - 1) {
-          // start
-          const [layoutCards, _deckCards] = pick(deckCards, 1);
-          axios.post('/api/uno/start', {
-            layout: layoutCards,
-            deck: _deckCards,
-          });
-        }
       }
+    }
+  };
+
+  const onStart = (data: {
+    layout: Card[], deck: Card[], turn: number, players: string[]
+  }) => {
+    // eslint-disable-next-line no-console
+    console.log('start -----');
+    setStatus(statusTypes.PLAYING);
+    setDeck(data.deck);
+    setLayout(data.layout);
+    setTurn(data.turn);
+    setPlayers(data.players);
+  };
+
+  const onDiscard = (data: {
+    layout: Card[]
+  }) => {
+    // eslint-disable-next-line no-console
+    console.log('discard -----');
+    setLayout([...layout, ...data.layout]);
+    // setTurn(data.turn);
+  };
+
+  useEffect(() => {
+    if (!socket) return;
+    socket.on('connect', async () => {
+      onConnect();
+    });
+    if (!me) return;
+    // eslint-disable-next-line no-console
+    console.log('AAAAA', me);
+    // join member
+    socket.on('join', (data) => {
+      onJoin(data);
+    });
+
+    socket.on('prepare', (data) => {
+      onPrepare(data);
     });
 
     // start
     socket.on('start', (data: {
-        layout: Card[], deck: Card[]
+        layout: Card[], deck: Card[], turn: number, players: string[]
       }) => {
-      // eslint-disable-next-line no-console
-      console.log('start -----');
-      setStatus(statusTypes.PLAYING);
-      setDeck(data.deck);
-      setLayout(data.layout);
+      onStart(data);
     });
 
     // draw
@@ -116,12 +158,10 @@ export const Uno: NextPage = () => {
 
     // discard
     socket.on('discard', (data) => {
-      // eslint-disable-next-line no-console
-      console.log('discard -----');
-      setLayout([...layout, ...data.layout]);
-      // setTurn(data.turn);
+      onDiscard(data);
     });
-  }, [socket, me, status, layout]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [socket, me]);
 
   useEffect(() => {
     setIsMyTurn(detectMyTurn(players, turn, me));
@@ -136,40 +176,32 @@ export const Uno: NextPage = () => {
     });
   };
 
-  const draw = () => {
-    if (!isMyTurn) return;
-    const [handCards, deckCards] = pick(deck, 1);
-    setHand([...hand, ...handCards]);
-    axios.post('/api/uno/draw', {
-      deck: deckCards,
-    });
-  };
-
-  const selectCard = (index: number) => {
-    const indexes = selectedCardIndexes.some((i) => i === index)
-      ? selectedCardIndexes.filter((i) => i !== index)
-      : [...selectedCardIndexes, index];
-    setSelectedCardIndexes(indexes);
-  };
-
-  const discard = () => {
-    if (!isMyTurn) return;
-    if (selectedCardIndexes.length < 1) return;
-    const cards = hand.filter((card, i) => !selectedCardIndexes.some((j) => j === i));
-    // const discardedCards = hand.filter((card, i) => selectedCardIndexes.some((j) => j === i));
-    const discardedCards = selectedCardIndexes.map((i) => hand[i]);
-    setSelectedCardIndexes([]);
-    setHand(cards);
-    axios.post('/api/uno/discard', {
-      layout: [...layout, ...discardedCards],
-    });
-  };
-
   const turnEnd = () => {
     if (!isMyTurn) return;
     axios.post('/api/uno/nextTurn', {
       turn: turn === players.length - 1 ? 0 : turn + 1,
     });
+  };
+
+  const draw = () => {
+    if (!isMyTurn) return;
+    const [handCards, deckCards] = pick(deck, 1);
+    setHand([...handCards, ...hand]);
+    axios.post('/api/uno/draw', {
+      deck: deckCards,
+    });
+  };
+
+  const discard = (index: number) => {
+    if (!isMyTurn) return;
+    const discardCard = hand[index];
+    if (!detectDiscardable(layout, discardCard)) return;
+    const remainingCard = hand.filter((card, i) => i !== index);
+    setHand(remainingCard);
+    axios.post('/api/uno/discard', {
+      layout: [...layout, discardCard],
+    });
+    turnEnd();
   };
 
   return (
@@ -182,34 +214,38 @@ export const Uno: NextPage = () => {
       </Head>
 
       <main>
-        <Debug
-          status={status}
-          players={players}
-          playersLength={players.length}
-          turn={turn}
-          isMyTurn={isMyTurn}
-          deck={deck.length}
-          layout={layout.length}
-          hand={hand.length}
-        />
         <div>
           {deck[0] && <UnoCard card={deck[0]} reverse onClick={draw} />}
         </div>
-        <div className="layout">
-          {layout.length && <UnoCard card={layout[layout.length - 1]} />}
-        </div>
+        <UnoLayoutCards
+          cards={layout}
+        />
         <UnoCardList
           cards={hand}
-          selectCard={selectCard}
-          selectedCardIndexes={selectedCardIndexes}
+          discard={discard}
         />
-        <div>
-          <button type="button" onClick={discard}>選択した手札を出す</button>
-          <button type="button" onClick={turnEnd}>ターン終了</button>
-        </div>
-        {players[turn] === me && (<div style={{ fontSize: 30 }}>my turn</div>) }
+        {status === statusTypes.PLAYING && (
+          <>
+            <div>
+              <button type="button" onClick={turnEnd}>ターン終了</button>
+            </div>
+            {players[turn] === me && (<div style={{ fontSize: 30 }}>my turn</div>) }
+          </>
+        )}
         {status === statusTypes.PREPARATION && (
           <button type="button" onClick={start}>スタート</button>
+        )}
+        {process.env.NODE_ENV === 'development' && (
+          <Debug
+            status={status}
+            players={players}
+            playersLength={players.length}
+            turn={turn}
+            isMyTurn={isMyTurn}
+            deck={deck.length}
+            layout={layout.length}
+            hand={hand.length}
+          />
         )}
       </main>
     </>

@@ -12,7 +12,7 @@ export const cardTypeLabels = {
   [cardTypes.DRAW_TWO]: 'DRAW TWO',
   [cardTypes.REVERSE]: 'REVERSE',
   [cardTypes.WILD]: 'WILD',
-  [cardTypes.WILD_DRAW_FOUR]: 'DRAW\nFOUR',
+  [cardTypes.WILD_DRAW_FOUR]: 'DRAW FOUR',
 } as const;
 
 export const cardColors = {

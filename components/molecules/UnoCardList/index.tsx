@@ -5,19 +5,18 @@ import { Container, Item } from './styles';
 
 type Props = {
   cards: Card[]
-  selectedCardIndexes?: number[]
-  selectCard: (index: number) => void
+  discard: (index: number) => void
 }
 
-export const UnoCardList: FC<Props> = ({ cards, selectedCardIndexes = [], selectCard }) => (
+export const UnoCardList: FC<Props> = ({ cards, discard }) => (
   <Container>
     {cards.map((card, i) => {
       const handleClick = () => {
-        selectCard(i);
+        discard(i);
       };
       return (
       // eslint-disable-next-line react/no-array-index-key
-        <Item key={i} selected={selectedCardIndexes.some((index) => index === i)}>
+        <Item key={i}>
           <UnoCard card={card} onClick={handleClick} />
         </Item>
       );

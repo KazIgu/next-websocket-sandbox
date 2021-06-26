@@ -66,3 +66,16 @@ export const pick = (cards: Card[], quantity = 1): [Card[], Card[]] => {
 export const detectMyTurn = (
   players: string[], turn: number, id: string,
 ): boolean => players[turn] === id;
+
+export const detectDiscardable = (layout: Card[], card: Card): boolean => {
+  const layoutTopCard = [...layout].reverse().find(
+    (c) => c.type === cardTypes.NUMBER
+      || c.type === cardTypes.WILD
+      || c.type === cardTypes.WILD_DRAW_FOUR,
+  );
+  if (layoutTopCard?.color === card.color) return true;
+  if (layoutTopCard?.number === card.number) return true;
+  if (card.type === cardTypes.WILD_DRAW_FOUR) return true;
+  if (card.type === cardTypes.WILD) return true;
+  return false;
+};
