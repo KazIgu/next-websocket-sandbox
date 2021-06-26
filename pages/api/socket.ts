@@ -19,6 +19,10 @@ const handler = async (req: NextApiRequest, res: NextApiResponseServerIO) => {
     const io = new ServerIO(httpServer, {
       path: '/api/socket',
     });
+
+    io.of('/othello');
+    io.of('/uno');
+
     // append SocketIO server to Next.js socket server response
     res.socket.server.io = io;
   }
