@@ -84,3 +84,29 @@ export const getNumberOfDraw = (card: Card): number => {
   if (card.type === cardTypes.WILD_DRAW_FOUR) return 4;
   return 0;
 };
+
+export const getNextTurn = ({
+  turn,
+  players: originalPlayers,
+  reverse = false,
+  skip = false,
+}: {
+  turn: number,
+  players: string[],
+  reverse?: boolean,
+  skip?: boolean
+}): number => {
+  if (originalPlayers.length === 1) return 0;
+  if (originalPlayers.length === 2 && skip) return turn;
+  const changeGap = skip ? 2 : 1;
+  const players = reverse
+    ? [
+      ...originalPlayers.filter((p, i) => i > turn),
+      ...originalPlayers.filter((p, i) => i <= turn)].reverse()
+    : [
+      ...originalPlayers.filter((p, i) => i >= turn),
+      ...originalPlayers.filter((p, i) => i < turn)];
+  const nextPlayer = players[changeGap];
+  const nextTurn = originalPlayers.findIndex((p) => p === nextPlayer);
+  return nextTurn;
+};

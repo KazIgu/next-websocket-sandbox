@@ -16,8 +16,16 @@ export const UnoCard: FC<Props> = ({
 }) => (
   <Container cardColor={card.color} onClick={onClick} reverse={reverse}>
     {reverse ? (
-      // 裏
-      <div>裏</div>
+      <Item cardType={cardTypes.WILD_DRAW_FOUR}>
+        <svg>
+          <text x="50%" y="50%" textAnchor="middle" dominantBaseline="central">
+            UNO
+          </text>
+          <text x="50%" y="50%" textAnchor="middle" dominantBaseline="central" white-space="pre">
+            UNO
+          </text>
+        </svg>
+      </Item>
     ) : (
       <Item cardType={card.type}>
         <svg>

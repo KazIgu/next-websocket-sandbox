@@ -4,7 +4,7 @@ import Head from 'next/head';
 import { io, Socket } from 'socket.io-client';
 import { useCallback, useEffect, useState } from 'react';
 import {
-  createAllCards, detectMyTurn, detectDiscardable, pick, getNumberOfDraw,
+  createAllCards, detectMyTurn, detectDiscardable, pick, getNumberOfDraw, getNextTurn,
 } from '@/utils/uno';
 import {
   cardColors, cardTypes, initialPickCount, statusTypes,
@@ -36,6 +36,8 @@ export const Uno: NextPage = () => {
   const [layout, setLayout] = useState<Card[]>([]);
   // Draw
   const [numberOfDraw, setNumberOfDraw] = useState<number>(0);
+  // Reverse
+  const [modeReverse, setModeReverse] = useState<boolean>(false);
 
   useEffect((): any => {
     if (!socket) {
@@ -116,11 +118,13 @@ export const Uno: NextPage = () => {
   const onDiscard = (data: {
     layout: Card[]
     numberOfDraw: number
+    modeReverse: boolean
   }) => {
     // eslint-disable-next-line no-console
     console.log('discard -----');
     setLayout(data.layout);
     setNumberOfDraw(data.numberOfDraw);
+    setModeReverse(data.modeReverse);
   };
 
   useEffect(() => {
@@ -129,8 +133,7 @@ export const Uno: NextPage = () => {
       onConnect();
     });
     if (!me) return;
-    // eslint-disable-next-line no-console
-    console.log('AAAAA', me);
+
     // join member
     socket.on('join', (data) => {
       onJoin(data);
@@ -177,11 +180,16 @@ export const Uno: NextPage = () => {
     });
   };
 
-  const turnEnd = () => {
+  const turnEnd = (skip = false, toggleReverse = false) => {
     if (!isMyTurn) return;
     if (numberOfDraw > 0) return;
     axios.post('/api/uno/nextTurn', {
-      turn: turn === players.length - 1 ? 0 : turn + 1,
+      turn: getNextTurn({
+        turn,
+        players,
+        reverse: toggleReverse ? !modeReverse : modeReverse,
+        skip,
+      }),
     });
   };
 
@@ -204,8 +212,9 @@ export const Uno: NextPage = () => {
     axios.post('/api/uno/discard', {
       layout: [...layout, discardCard],
       numberOfDraw: getNumberOfDraw(discardCard),
+      modeReverse: discardCard.type === cardTypes.REVERSE ? !modeReverse : modeReverse,
     });
-    turnEnd();
+    turnEnd(discardCard.type === cardTypes.SKIP, discardCard.type === cardTypes.REVERSE);
   };
 
   const draw = () => {
@@ -227,6 +236,10 @@ export const Uno: NextPage = () => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [players, turn, me]);
 
+  const onClickTurnEnd = () => {
+    turnEnd();
+  };
+
   return (
     <>
       <Head>
@@ -237,29 +250,32 @@ export const Uno: NextPage = () => {
       </Head>
 
       <main>
-        <div>
-          {deck[0] && <UnoCard card={deck[0]} reverse onClick={draw} />}
-        </div>
-        <UnoLayoutCards
-          cards={layout}
-        />
-        <UnoCardList
-          cards={hand}
-          discard={discard}
-        />
         {status === statusTypes.PLAYING && (
           <>
             <div>
-              <button type="button" onClick={turnEnd}>ターン終了</button>
+              {deck[0] && <UnoCard card={deck[0]} reverse onClick={draw} />}
+            </div>
+            <UnoLayoutCards
+              cards={layout}
+            />
+            <UnoCardList
+              cards={hand}
+              discard={discard}
+            />
+            <div>
+              <button type="button" onClick={onClickTurnEnd}>ターン終了</button>
             </div>
             {players[turn] === me && (<div style={{ fontSize: 30 }}>my turn</div>) }
           </>
         )}
+
         {status === statusTypes.PREPARATION && (
           <button type="button" onClick={start}>スタート</button>
         )}
+
         {process.env.NODE_ENV === 'development' && (
           <Debug
+            modeReverse={modeReverse}
             numberOfDraw={numberOfDraw}
             status={status}
             players={players}
