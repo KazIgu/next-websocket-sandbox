@@ -2,7 +2,10 @@ import styled from 'styled-components';
 import { SwipeableProps } from 'react-swipeable';
 
 export const Wrapper = styled.div<SwipeableProps>`
-  position: relative;
+  position: fixed;
+  width: 100%;
+  height: 100vh;
+  background: #01579b;
 `;
 
 export const Container = styled.div`

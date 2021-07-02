@@ -2,6 +2,7 @@ import { NextPage } from 'next';
 import Head from 'next/head';
 import { Block } from '@/types/2048';
 import { G2048Board } from '@/components/atoms/G2048Board';
+import { G2048Score } from '@/components/atoms/G2048Score';
 import {
   createBlocks, flick, flickLeft, flickRight,
 } from '@/utils/2048';
@@ -12,39 +13,76 @@ export const Page: NextPage = () => {
   const [turn, setTurn] = useState<number>(0);
   const [blocks, setBlocks] = useState<Block[]>([]);
 
-  const nextTurn = (nextBlocks: Block[]) => {
+  const nextTurn = useCallback((nextBlocks: Block[]) => {
     if (JSON.stringify(nextBlocks) === JSON.stringify(blocks)) return;
-    setTurn(turn + 1);
-    setBlocks([...createBlocks({
+    const next = [...createBlocks({
       turn,
       blocks: nextBlocks,
-    })]);
-  };
+    })];
+    setTurn(turn + 1);
+    setBlocks(next);
 
-  const onSwipeLeft = () => {
+    localStorage.setItem('2048', JSON.stringify({
+      turn: turn + 1,
+      blocks: next,
+    }));
+  }, [blocks, turn]);
+
+  const onSwipeLeft = useCallback(() => {
     const nextBlocks = flick(directions.LEFT, blocks);
     nextTurn(nextBlocks);
-  };
+  }, [blocks, nextTurn]);
 
-  const onSwipeRight = () => {
+  const onSwipeRight = useCallback(() => {
     const nextBlocks = flick(directions.RIGHT, blocks);
     nextTurn(nextBlocks);
-  };
+  }, [blocks, nextTurn]);
 
-  const onSwipeUp = () => {
+  const onSwipeUp = useCallback(() => {
     const nextBlocks = flick(directions.UP, blocks);
     nextTurn(nextBlocks);
-  };
+  }, [blocks, nextTurn]);
 
-  const onSwipeDown = () => {
+  const onSwipeDown = useCallback(() => {
     const nextBlocks = flick(directions.DOWN, blocks);
     nextTurn(nextBlocks);
-  };
+  }, [blocks, nextTurn]);
 
+  const onKeydown = useCallback((event: KeyboardEvent) => {
+    if (event.key === 'ArrowRight') {
+      onSwipeRight();
+    }
+    if (event.key === 'ArrowLeft') {
+      onSwipeLeft();
+    }
+    if (event.key === 'ArrowUp') {
+      onSwipeUp();
+    }
+    if (event.key === 'ArrowDown') {
+      onSwipeDown();
+    }
+  }, [onSwipeDown, onSwipeLeft, onSwipeRight, onSwipeUp]);
+
+  // onMount
   useEffect(() => {
-    setBlocks(createBlocks({}));
-    setTurn(1);
+    const storage = localStorage.getItem('2048');
+    if (storage) {
+      const data = JSON.parse(storage);
+      setBlocks(data.blocks);
+      setTurn(data.turn);
+    } else {
+      setBlocks(createBlocks({}));
+      setTurn(1);
+    }
   }, []);
+
+  // EventListener
+  useEffect(() => {
+    document.addEventListener('keydown', onKeydown, false);
+    return () => {
+      document.removeEventListener('keydown', onKeydown);
+    };
+  }, [onKeydown]);
 
   return (
     <>
@@ -66,6 +104,9 @@ export const Page: NextPage = () => {
           `}
         </style>
       </>
+      <G2048Score
+        blocks={blocks}
+      />
       <G2048Board
         blocks={blocks}
         onSwipeLeft={onSwipeLeft}
@@ -73,6 +114,21 @@ export const Page: NextPage = () => {
         onSwipeUp={onSwipeUp}
         onSwipeDown={onSwipeDown}
       />
+      <button
+        type="button"
+        style={{
+          position: 'absolute',
+          bottom: '0',
+        }}
+        onClick={() => {
+          localStorage.removeItem('2048');
+          setBlocks(createBlocks({}));
+          setTurn(1);
+        }}
+      >
+        やり直し
+
+      </button>
     </>
   );
 };
