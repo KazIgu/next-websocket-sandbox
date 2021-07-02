@@ -42,14 +42,24 @@ export const BlockItem = styled.div<{
   font-size: 32px;
   ${({ number = 0 }) => {
     let color = Color('rgb(255, 255, 255)');
+    let textColor = color.isLight() ? '#333' : '#ddd';
+    let backgroundColor = color.hex();
     if (number < 33) {
       color = color.mix(Color('orange'), number / 32);
+      textColor = color.isLight() ? '#333' : '#ddd';
+      backgroundColor = color.hex();
     } else if (number < 1025) {
       color = color.mix(Color('red'), (number + 1024) / (1024 + 1024));
+      textColor = color.isLight() ? '#333' : '#ddd';
+      backgroundColor = color.hex();
+    } else {
+      color = color.mix(Color('red'), (number + 1024) / (1024 + 1024));
+      textColor = '#fff';
+      backgroundColor = '#333';
     }
     return css`
-      color: ${color.isLight() ? '#333' : '#ddd'};
-      background-color: ${color.hex()};
+      color: ${textColor};
+      background: ${backgroundColor};
     `;
   }}
   display: flex;
