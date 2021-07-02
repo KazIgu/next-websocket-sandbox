@@ -1,5 +1,6 @@
 import styled from 'styled-components';
 import Color from 'color';
+import { Revision as RevisionIcon } from '@styled-icons/boxicons-regular/Revision'
 
 const backgroundColor = Color('#01579b');
 
@@ -10,13 +11,10 @@ export const Container = styled.div`
   color: #fff;
   padding: 8px 16px;
   box-sizing: content-box;
-  justify-content: flex-end;
+  justify-content: space-between;
 `;
 
 export const Item = styled.div`
-  width: 80px;
-  /* background: ${backgroundColor.negate().hsl().string()}; */
-  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -26,11 +24,15 @@ export const Item = styled.div`
 export const Label = styled.div`
   font-size: 10px;
   width: 100%;
-  text-align:right;
+  text-align:left;
 `;
 
 export const Value = styled.div`
   font-size: 32px;
   width: 100%;
-  text-align:right;
+  text-align:left;
 `;
+
+export const Revision = styled(RevisionIcon)`
+  width: 40px;
+`

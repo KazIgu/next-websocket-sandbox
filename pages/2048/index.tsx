@@ -12,6 +12,7 @@ import { directions } from '@/constants/2048';
 export const Page: NextPage = () => {
   const [turn, setTurn] = useState<number>(0);
   const [blocks, setBlocks] = useState<Block[]>([]);
+  const [highScore, setHighScore] = useState<number>(0);
 
   const nextTurn = useCallback((nextBlocks: Block[]) => {
     if (JSON.stringify(nextBlocks) === JSON.stringify(blocks)) return;
@@ -26,6 +27,10 @@ export const Page: NextPage = () => {
       turn: turn + 1,
       blocks: next,
     }));
+    const score = next.reduce((s, current) => s + current.number, 0);
+    if (Number(localStorage.getItem('2048-highScore')) < score) {
+      localStorage.setItem('2048-highScore', `${score}`);
+    }
   }, [blocks, turn]);
 
   const onSwipeLeft = useCallback(() => {
@@ -48,6 +53,15 @@ export const Page: NextPage = () => {
     nextTurn(nextBlocks);
   }, [blocks, nextTurn]);
 
+  const refresh = () => {
+    // eslint-disable-next-line no-alert
+    if (window.confirm('やり直します。よろしいですか？')) {
+      localStorage.removeItem('2048');
+      setBlocks(createBlocks({}));
+      setTurn(1);
+    }
+  };
+  // Keyboard
   const onKeydown = useCallback((event: KeyboardEvent) => {
     if (event.key === 'ArrowRight') {
       onSwipeRight();
@@ -65,15 +79,17 @@ export const Page: NextPage = () => {
 
   // onMount
   useEffect(() => {
-    const storage = localStorage.getItem('2048');
-    if (storage) {
-      const data = JSON.parse(storage);
+    const storageData = localStorage.getItem('2048');
+    const storageHighScore = localStorage.getItem('2048-highScore');
+    if (storageData) {
+      const data = JSON.parse(storageData);
       setBlocks(data.blocks);
       setTurn(data.turn);
     } else {
       setBlocks(createBlocks({}));
       setTurn(1);
     }
+    setHighScore(Number(storageHighScore));
   }, []);
 
   // EventListener
@@ -106,6 +122,8 @@ export const Page: NextPage = () => {
       </>
       <G2048Score
         blocks={blocks}
+        refresh={refresh}
+        highScore={highScore}
       />
       <G2048Board
         blocks={blocks}
@@ -114,21 +132,6 @@ export const Page: NextPage = () => {
         onSwipeUp={onSwipeUp}
         onSwipeDown={onSwipeDown}
       />
-      <button
-        type="button"
-        style={{
-          position: 'absolute',
-          bottom: '0',
-        }}
-        onClick={() => {
-          localStorage.removeItem('2048');
-          setBlocks(createBlocks({}));
-          setTurn(1);
-        }}
-      >
-        やり直し
-
-      </button>
     </>
   );
 };
