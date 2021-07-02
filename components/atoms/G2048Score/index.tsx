@@ -1,5 +1,6 @@
 import { FC } from 'react';
 import { Block } from '@/types/2048';
+
 import {
   Container, Item, Label, Value, Revision,
 } from './styles';

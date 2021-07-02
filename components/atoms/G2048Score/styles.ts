@@ -1,6 +1,6 @@
 import styled from 'styled-components';
 import Color from 'color';
-import { Revision as RevisionIcon } from '@styled-icons/boxicons-regular/Revision'
+import { Autorenew } from '@styled-icons/material/Autorenew';
 
 const backgroundColor = Color('#01579b');
 
@@ -33,6 +33,6 @@ export const Value = styled.div`
   text-align:left;
 `;
 
-export const Revision = styled(RevisionIcon)`
+export const Revision = styled(Autorenew)`
   width: 40px;
-`
+`;
