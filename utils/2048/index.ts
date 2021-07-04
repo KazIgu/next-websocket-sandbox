@@ -82,9 +82,11 @@ export const flick = (direction: Direction, blocks: Block[]): Block[] => {
       const { number } = block;
       const pos = direction === directions.LEFT || direction === directions.UP ? i : 3 - i;
       if (sortedRowOrCol[i + 1]?.number === number) {
+        const id = sortedRowOrCol[i + 1]?.id;
         sortedRowOrCol.splice(i + 1, 1);
         return {
           ...block,
+          id,
           number: number * 2,
           row: direction === directions.LEFT || direction === directions.RIGHT ? pos : block.row,
           col: direction === directions.UP || direction === directions.DOWN ? pos : block.col,
