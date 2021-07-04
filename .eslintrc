@@ -20,5 +20,10 @@
       }
    ],
    "react/jsx-filename-extension": [1, { "extensions": [".tsx", ".jsx"] }]
-    }
+  },
+  "globals": {
+    "React": true,
+    "jsdom": true,
+    "JSX": true
+  }
 }

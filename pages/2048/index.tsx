@@ -3,6 +3,7 @@ import Head from 'next/head';
 import { Block } from '@/types/2048';
 import { G2048Board } from '@/components/atoms/G2048Board';
 import { G2048Score } from '@/components/atoms/G2048Score';
+import { G2048Direction } from '@/components/atoms/G2048Direction';
 import {
   createBlocks, flick, flickLeft, flickRight,
 } from '@/utils/2048';
@@ -13,6 +14,7 @@ export const Page: NextPage = () => {
   const [turn, setTurn] = useState<number>(0);
   const [blocks, setBlocks] = useState<Block[]>([]);
   const [highScore, setHighScore] = useState<number>(0);
+  const [max, setMax] = useState<number>(0);
 
   const nextTurn = useCallback((nextBlocks: Block[]) => {
     if (JSON.stringify(nextBlocks) === JSON.stringify(blocks)) return;
@@ -22,6 +24,7 @@ export const Page: NextPage = () => {
     })];
     setTurn(turn + 1);
     setBlocks(next);
+    setMax(next.reduce((s, current) => (s < current.number ? current.number : s), 0));
 
     localStorage.setItem('2048', JSON.stringify({
       turn: turn + 1,
@@ -132,6 +135,7 @@ export const Page: NextPage = () => {
         onSwipeUp={onSwipeUp}
         onSwipeDown={onSwipeDown}
       />
+      <G2048Direction max={max} />
     </>
   );
 };
