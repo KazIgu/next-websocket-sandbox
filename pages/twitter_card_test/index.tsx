@@ -31,6 +31,24 @@ export const Home: NextPage = () => {
   const pause = () => {
     audioRef.current?.pause();
   };
+
+  useEffect(() => {
+    const onPlay = () => {
+      console.log('play');
+    };
+    const onPause = () => {
+      console.log('pause');
+    };
+    if (audioRef.current) {
+      audioRef.current.addEventListener('play', onPlay);
+      audioRef.current.addEventListener('pause', onPause);
+    }
+    return () => {
+      audioRef.current?.removeEventListener('play', onPlay);
+      audioRef.current?.removeEventListener('pause', onPause);
+    };
+  }, []);
+
   return (
     <>
       <Head>
